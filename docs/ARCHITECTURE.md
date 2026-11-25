@@ -56,7 +56,8 @@ Each developer or AI agent can own a specific domain folder with minimal overlap
 | **Survival Stats** | `src/server/Services/SurvivalService` | `src/client/Controllers/UIController` | `Types/SurvivalTypes`, `Network/Remotes` |
 | **Voxel Building** | `src/server/Services/VoxelBuildService` | `src/client/Controllers/BuildController` | `Config/Blocks`, `Util/VoxelGrid`, `Network/Remotes` |
 | **Camera & Movement** | — (anti-cheat checks later) | `CameraController`, `MovementController` | `Config/Constants` |
-| **Inventory & Crafting** | `src/server/Services/InventoryService` | `src/client/Controllers/UIController` | `Config/Items`, `Network/Remotes` |
+| **Inventory & Crafting** | `src/server/Services/InventoryService` | `src/client/Controllers/UIController` | `Config/Items`, `Config/Recipes`, `Network/Remotes` |
+| **World & Gathering** | `src/server/Services/WorldService` | `src/client/Controllers/GatherController` | `Config/ResourceNodes`, `Network/Remotes` |
 
 ---
 
@@ -72,6 +73,11 @@ All Client ↔ Server communication goes through `ReplicatedStorage.Remotes` man
 | `SurvivalStateChanged` | Server → Client | Sync authoritative Health/Stamina/Hunger snapshot |
 | `SetSprinting` | Client → Server | Toggle authoritative sprint state (drains stamina & applies role move speed) |
 | `RequestDodge` | Client → Server | Request dodge dash stamina deduction with server cooldown validation |
+| `InventoryUpdated` | Server → Client | Sync authoritative `InventoryMap` snapshot to the player |
+| `GatherNode` | Client → Server | Request striking/harvesting a voxel resource node (`nodeId`) |
+| `CraftRecipe` | Client → Server | Request crafting a recipe ID (validates ingredients & Role requirements) |
+| `UseItem` | Client → Server | Request consuming a survival item (`berry`, `healing_tonic`, `campfire_kit`) |
+| `ToastNotification` | Server → Client | Display feedback toast message in the client HUD |
 
 *(Add every new remote here as it is implemented.)*
 

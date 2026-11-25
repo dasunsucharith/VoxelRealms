@@ -7,19 +7,36 @@ local UserInputService = game:GetService("UserInputService")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Blocks = require(Shared.Config.Blocks)
 local Constants = require(Shared.Config.Constants)
+local Items = require(Shared.Config.Items)
+local Recipes = require(Shared.Config.Recipes)
 local Roles = require(Shared.Config.Roles)
 local Remotes = require(Shared.Network.Remotes)
 local GameTypes = require(Shared.Types.GameTypes)
 
 type BlockId = GameTypes.BlockId
+type ItemId = GameTypes.ItemId
+type InventoryMap = GameTypes.InventoryMap
 type RoleId = GameTypes.RoleId
 type RoleDefinition = GameTypes.RoleDefinition
 type SurvivalState = GameTypes.SurvivalState
 
 local ROLE_ORDER: { RoleId } = { "architect", "blacksmith", "hunter", "alchemist" }
+local ITEM_DISPLAY_ORDER: { ItemId } = {
+	"wood",
+	"stone",
+	"iron_ore",
+	"herb",
+	"berry",
+	"plank_block",
+	"timber_block",
+	"stone_block",
+	"healing_tonic",
+	"campfire_kit",
+}
 
 local UIController = {}
 local localPlayer = Players.LocalPlayer
+local currentInventory: InventoryMap = {}
 
 local healthFill: Frame
 local staminaFill: Frame
@@ -28,13 +45,38 @@ local roleBadgeLabel: TextLabel
 local roleAccentStrip: Frame
 local buildModeLabel: TextLabel
 local roleModal: Frame
+local inventoryModal: Frame
+local inventoryList: ScrollingFrame
+local craftingModal: Frame
+local craftingList: ScrollingFrame
 local controlsPanel: Frame
+local toastContainer: Frame
 local hotbarStrokes: { [BlockId]: UIStroke } = {}
 
 local function _addCorner(parent: GuiObject, radius: number): ()
 	local corner = Instance.new("UICorner")
 	corner.CornerRadius = UDim.new(0, radius)
 	corner.Parent = parent
+end
+
+local function _getActiveRoleId(): RoleId
+	local attr = localPlayer:GetAttribute("RoleId")
+	if typeof(attr) == "string" and (Roles :: { [string]: RoleDefinition })[attr] then
+		return attr :: RoleId
+	end
+	return Constants.DEFAULT_ROLE :: RoleId
+end
+
+local function _closeAllModals(): ()
+	roleModal.Visible = false
+	inventoryModal.Visible = false
+	craftingModal.Visible = false
+end
+
+local function _toggleModal(target: Frame): ()
+	local willOpen = not target.Visible
+	_closeAllModals()
+	target.Visible = willOpen
 end
 
 local function _createStatBar(parent: Instance, labelText: string, barColor: Color3, order: number): Frame
@@ -70,14 +112,211 @@ local function _createStatBar(parent: Instance, labelText: string, barColor: Col
 	return fill
 end
 
+local function _clearListChildren(container: ScrollingFrame): ()
+	for _, child in ipairs(container:GetChildren()) do
+		if not child:IsA("UIListLayout") then
+			child:Destroy()
+		end
+	end
+end
+
+local function _refreshInventoryModal(): ()
+	_clearListChildren(inventoryList)
+
+	local rowCount = 0
+	for _, itemId in ipairs(ITEM_DISPLAY_ORDER) do
+		local count = currentInventory[itemId] or 0
+		if count > 0 then
+			rowCount += 1
+			local def = Items[itemId]
+
+			local row = Instance.new("Frame")
+			row.Name = "ItemRow_" .. itemId
+			row.Size = UDim2.new(1, -8, 0, 56)
+			row.BackgroundColor3 = Color3.fromRGB(30, 34, 46)
+			row.LayoutOrder = rowCount
+			row.Parent = inventoryList
+			_addCorner(row, 8)
+
+			local swatch = Instance.new("Frame")
+			swatch.Size = UDim2.new(0, 32, 0, 32)
+			swatch.Position = UDim2.new(0, 12, 0.5, -16)
+			swatch.BackgroundColor3 = def.accentColor
+			swatch.BorderSizePixel = 0
+			swatch.Parent = row
+			_addCorner(swatch, 6)
+
+			local title = Instance.new("TextLabel")
+			title.Size = UDim2.new(1, -150, 0, 22)
+			title.Position = UDim2.new(0, 54, 0, 6)
+			title.BackgroundTransparency = 1
+			title.Font = Enum.Font.GothamBold
+			title.Text = string.format("%s  ×%d", def.displayName, count)
+			title.TextColor3 = Color3.fromRGB(248, 250, 255)
+			title.TextSize = 14
+			title.TextXAlignment = Enum.TextXAlignment.Left
+			title.Parent = row
+
+			local desc = Instance.new("TextLabel")
+			desc.Size = UDim2.new(1, -150, 0, 24)
+			desc.Position = UDim2.new(0, 54, 0, 28)
+			desc.BackgroundTransparency = 1
+			desc.Font = Enum.Font.Gotham
+			desc.Text = def.description
+			desc.TextColor3 = Color3.fromRGB(185, 195, 215)
+			desc.TextSize = 11
+			desc.TextTruncate = Enum.TextTruncate.AtEnd
+			desc.TextXAlignment = Enum.TextXAlignment.Left
+			desc.Parent = row
+
+			if def.category == "consumable" then
+				local useBtn = Instance.new("TextButton")
+				useBtn.Size = UDim2.new(0, 74, 0, 30)
+				useBtn.Position = UDim2.new(1, -86, 0.5, -15)
+				useBtn.BackgroundColor3 = Color3.fromRGB(68, 175, 108)
+				useBtn.Font = Enum.Font.GothamBold
+				useBtn.Text = "USE"
+				useBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+				useBtn.TextSize = 12
+				useBtn.Parent = row
+				_addCorner(useBtn, 6)
+
+				useBtn.MouseButton1Click:Connect(function()
+					Remotes.GetEvent("UseItem"):FireServer(itemId)
+				end)
+			end
+		end
+	end
+
+	if rowCount == 0 then
+		local emptyLabel = Instance.new("TextLabel")
+		emptyLabel.Size = UDim2.new(1, 0, 0, 48)
+		emptyLabel.BackgroundTransparency = 1
+		emptyLabel.Font = Enum.Font.GothamMedium
+		emptyLabel.Text = "Your pack is empty — press [E] near trees, rocks, or berry bushes to gather!"
+		emptyLabel.TextColor3 = Color3.fromRGB(185, 195, 215)
+		emptyLabel.TextSize = 13
+		emptyLabel.TextWrapped = true
+		emptyLabel.Parent = inventoryList
+	end
+
+	inventoryList.CanvasSize = UDim2.new(0, 0, 0, math.max(1, rowCount) * 64)
+end
+
+local function _refreshCraftingModal(): ()
+	_clearListChildren(craftingList)
+
+	local activeRoleId = _getActiveRoleId()
+
+	for index, recipe in ipairs(Recipes) do
+		local hasAllIngredients = true
+		local ingredientParts: { string } = {}
+		for itemId, needed in pairs(recipe.ingredients) do
+			local owned = currentInventory[itemId] or 0
+			if owned < needed then
+				hasAllIngredients = false
+			end
+			local itemName = Items[itemId].displayName
+			table.insert(ingredientParts, string.format("%s %d/%d", itemName, owned, needed))
+		end
+
+		local roleAllowed = if recipe.requiredRole then activeRoleId == recipe.requiredRole else true
+		local canCraft = hasAllIngredients and roleAllowed
+
+		local row = Instance.new("Frame")
+		row.Name = "RecipeRow_" .. recipe.id
+		row.Size = UDim2.new(1, -8, 0, 68)
+		row.BackgroundColor3 = Color3.fromRGB(30, 34, 46)
+		row.LayoutOrder = index
+		row.Parent = craftingList
+		_addCorner(row, 8)
+
+		local roleSuffix = ""
+		if recipe.requiredRole then
+			roleSuffix = string.format("  [%s Only]", Roles[recipe.requiredRole].displayName)
+		end
+
+		local title = Instance.new("TextLabel")
+		title.Size = UDim2.new(1, -110, 0, 22)
+		title.Position = UDim2.new(0, 12, 0, 6)
+		title.BackgroundTransparency = 1
+		title.Font = Enum.Font.GothamBold
+		title.Text = recipe.displayName .. roleSuffix
+		title.TextColor3 = if roleAllowed then Color3.fromRGB(248, 250, 255) else Color3.fromRGB(230, 150, 150)
+		title.TextSize = 14
+		title.TextXAlignment = Enum.TextXAlignment.Left
+		title.Parent = row
+
+		local reqLabel = Instance.new("TextLabel")
+		reqLabel.Size = UDim2.new(1, -110, 0, 18)
+		reqLabel.Position = UDim2.new(0, 12, 0, 28)
+		reqLabel.BackgroundTransparency = 1
+		reqLabel.Font = Enum.Font.GothamMedium
+		reqLabel.Text = "Needs: " .. table.concat(ingredientParts, "  |  ")
+		reqLabel.TextColor3 = if hasAllIngredients then Color3.fromRGB(130, 225, 160) else Color3.fromRGB(225, 175, 115)
+		reqLabel.TextSize = 11
+		reqLabel.TextXAlignment = Enum.TextXAlignment.Left
+		reqLabel.Parent = row
+
+		local desc = Instance.new("TextLabel")
+		desc.Size = UDim2.new(1, -110, 0, 18)
+		desc.Position = UDim2.new(0, 12, 0, 46)
+		desc.BackgroundTransparency = 1
+		desc.Font = Enum.Font.Gotham
+		desc.Text = recipe.description
+		desc.TextColor3 = Color3.fromRGB(175, 186, 206)
+		desc.TextSize = 11
+		desc.TextTruncate = Enum.TextTruncate.AtEnd
+		desc.TextXAlignment = Enum.TextXAlignment.Left
+		desc.Parent = row
+
+		local craftBtn = Instance.new("TextButton")
+		craftBtn.Size = UDim2.new(0, 82, 0, 34)
+		craftBtn.Position = UDim2.new(1, -94, 0.5, -17)
+		craftBtn.BackgroundColor3 = if canCraft then Color3.fromRGB(68, 160, 230) else Color3.fromRGB(64, 68, 82)
+		craftBtn.Font = Enum.Font.GothamBold
+		craftBtn.Text = if roleAllowed then "CRAFT" else "LOCKED"
+		craftBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+		craftBtn.TextSize = 12
+		craftBtn.Parent = row
+		_addCorner(craftBtn, 6)
+
+		craftBtn.MouseButton1Click:Connect(function()
+			Remotes.GetEvent("CraftRecipe"):FireServer(recipe.id)
+		end)
+	end
+
+	craftingList.CanvasSize = UDim2.new(0, 0, 0, #Recipes * 76)
+end
+
+local function _showToast(message: string, accentColor: Color3?): ()
+	local banner = Instance.new("Frame")
+	banner.Size = UDim2.new(1, 0, 0, 32)
+	banner.BackgroundColor3 = Color3.fromRGB(20, 24, 32)
+	banner.BackgroundTransparency = 0.12
+	banner.Parent = toastContainer
+	_addCorner(banner, 8)
+
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(1, -16, 1, 0)
+	label.Position = UDim2.new(0, 8, 0, 0)
+	label.BackgroundTransparency = 1
+	label.Font = Enum.Font.GothamBold
+	label.Text = message
+	label.TextColor3 = accentColor or Color3.fromRGB(240, 245, 255)
+	label.TextSize = 13
+	label.Parent = banner
+
+	task.delay(2.6, function()
+		banner:Destroy()
+	end)
+end
+
 local function _refreshRoleDisplay(): ()
-	local attr = localPlayer:GetAttribute("RoleId")
-	local roleId: RoleId = if typeof(attr) == "string" and (Roles :: { [string]: RoleDefinition })[attr]
-		then attr :: RoleId
-		else Constants.DEFAULT_ROLE :: RoleId
-	local def = Roles[roleId]
+	local def = Roles[_getActiveRoleId()]
 	roleBadgeLabel.Text = string.format("ROLE: %s  [R]", string.upper(def.displayName))
 	roleAccentStrip.BackgroundColor3 = def.accentColor
+	_refreshCraftingModal()
 end
 
 local function _refreshHotbarSelection(): ()
@@ -95,6 +334,49 @@ local function _refreshHotbarSelection(): ()
 	end
 end
 
+local function _createModalFrame(
+	parent: Instance,
+	name: string,
+	titleText: string,
+	width: number,
+	height: number
+): (Frame, ScrollingFrame)
+	local modal = Instance.new("Frame")
+	modal.Name = name
+	modal.Size = UDim2.new(0, width, 0, height)
+	modal.Position = UDim2.new(0.5, -math.floor(width / 2), 0.5, -math.floor(height / 2))
+	modal.BackgroundColor3 = Color3.fromRGB(18, 21, 28)
+	modal.BackgroundTransparency = 0.08
+	modal.Visible = false
+	modal.Parent = parent
+	_addCorner(modal, 12)
+
+	local title = Instance.new("TextLabel")
+	title.Size = UDim2.new(1, -24, 0, 38)
+	title.Position = UDim2.new(0, 12, 0, 10)
+	title.BackgroundTransparency = 1
+	title.Font = Enum.Font.GothamBold
+	title.Text = titleText
+	title.TextColor3 = Color3.fromRGB(245, 248, 255)
+	title.TextSize = 16
+	title.Parent = modal
+
+	local list = Instance.new("ScrollingFrame")
+	list.Size = UDim2.new(1, -28, 1, -64)
+	list.Position = UDim2.new(0, 14, 0, 52)
+	list.BackgroundTransparency = 1
+	list.BorderSizePixel = 0
+	list.ScrollBarThickness = 6
+	list.Parent = modal
+
+	local layout = Instance.new("UIListLayout")
+	layout.Padding = UDim.new(0, 8)
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
+	layout.Parent = list
+
+	return modal, list
+end
+
 local function _buildHud(): ()
 	local playerGui = localPlayer:WaitForChild("PlayerGui")
 	local screenGui = Instance.new("ScreenGui")
@@ -103,7 +385,20 @@ local function _buildHud(): ()
 	screenGui.IgnoreGuiInset = false
 	screenGui.Parent = playerGui
 
-	-- Top-Left: Role Badge button
+	-- Top-Center: Toast Notifications
+	toastContainer = Instance.new("Frame")
+	toastContainer.Name = "ToastContainer"
+	toastContainer.Size = UDim2.new(0, 360, 0, 140)
+	toastContainer.Position = UDim2.new(0.5, -180, 0, 16)
+	toastContainer.BackgroundTransparency = 1
+	toastContainer.Parent = screenGui
+
+	local toastLayout = Instance.new("UIListLayout")
+	toastLayout.Padding = UDim.new(0, 6)
+	toastLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	toastLayout.Parent = toastContainer
+
+	-- Top-Left: Role Badge button + Quick Inventory/Craft buttons
 	local roleButton = Instance.new("TextButton")
 	roleButton.Name = "RoleBadge"
 	roleButton.Size = UDim2.new(0, 230, 0, 40)
@@ -131,6 +426,30 @@ local function _buildHud(): ()
 	roleBadgeLabel.TextSize = 14
 	roleBadgeLabel.TextXAlignment = Enum.TextXAlignment.Left
 	roleBadgeLabel.Parent = roleButton
+
+	local invQuickBtn = Instance.new("TextButton")
+	invQuickBtn.Size = UDim2.new(0, 111, 0, 30)
+	invQuickBtn.Position = UDim2.new(0, 16, 0, 62)
+	invQuickBtn.BackgroundColor3 = Color3.fromRGB(26, 30, 40)
+	invQuickBtn.BackgroundTransparency = 0.15
+	invQuickBtn.Font = Enum.Font.GothamBold
+	invQuickBtn.Text = "PACK  [I]"
+	invQuickBtn.TextColor3 = Color3.fromRGB(230, 236, 248)
+	invQuickBtn.TextSize = 12
+	invQuickBtn.Parent = screenGui
+	_addCorner(invQuickBtn, 7)
+
+	local craftQuickBtn = Instance.new("TextButton")
+	craftQuickBtn.Size = UDim2.new(0, 111, 0, 30)
+	craftQuickBtn.Position = UDim2.new(0, 135, 0, 62)
+	craftQuickBtn.BackgroundColor3 = Color3.fromRGB(26, 30, 40)
+	craftQuickBtn.BackgroundTransparency = 0.15
+	craftQuickBtn.Font = Enum.Font.GothamBold
+	craftQuickBtn.Text = "CRAFT  [C]"
+	craftQuickBtn.TextColor3 = Color3.fromRGB(230, 236, 248)
+	craftQuickBtn.TextSize = 12
+	craftQuickBtn.Parent = screenGui
+	_addCorner(craftQuickBtn, 7)
 
 	-- Bottom-Left: Survival Bars (HP, Stamina, Hunger)
 	local survivalFrame = Instance.new("Frame")
@@ -227,8 +546,8 @@ local function _buildHud(): ()
 	-- Top-Right: Compact Controls Guide
 	controlsPanel = Instance.new("Frame")
 	controlsPanel.Name = "ControlsPanel"
-	controlsPanel.Size = UDim2.new(0, 215, 0, 146)
-	controlsPanel.Position = UDim2.new(1, -231, 0, 16)
+	controlsPanel.Size = UDim2.new(0, 225, 0, 184)
+	controlsPanel.Position = UDim2.new(1, -241, 0, 16)
 	controlsPanel.BackgroundColor3 = Color3.fromRGB(20, 23, 30)
 	controlsPanel.BackgroundTransparency = 0.22
 	controlsPanel.Parent = screenGui
@@ -246,11 +565,13 @@ local function _buildHud(): ()
 	controlsText.Text = table.concat({
 		"CONTROLS  [H] Hide",
 		"[V] 1st / 3rd Person",
+		"[E] Gather Resources",
+		"[I] Inventory  |  [C] Craft",
+		"[R] Switch Role",
 		"[B] Toggle Build Mode",
 		"[1-5] Select Block",
 		"[LMB / RMB] Place / Break",
 		"[Shift] Sprint  |  [Q] Dodge",
-		"[R] Switch Role",
 	}, "\n")
 	controlsText.Parent = controlsPanel
 
@@ -333,8 +654,20 @@ local function _buildHud(): ()
 		end)
 	end
 
+	-- Center Modals: Inventory & Crafting
+	inventoryModal, inventoryList =
+		_createModalFrame(screenGui, "InventoryModal", "SURVIVAL PACK  (Press I to Close)", 540, 380)
+	craftingModal, craftingList =
+		_createModalFrame(screenGui, "CraftingModal", "CRAFTING BENCH  (Press C to Close)", 580, 420)
+
 	roleButton.MouseButton1Click:Connect(function()
-		roleModal.Visible = not roleModal.Visible
+		_toggleModal(roleModal)
+	end)
+	invQuickBtn.MouseButton1Click:Connect(function()
+		_toggleModal(inventoryModal)
+	end)
+	craftQuickBtn.MouseButton1Click:Connect(function()
+		_toggleModal(craftingModal)
 	end)
 end
 
@@ -342,6 +675,8 @@ function UIController.Init(): ()
 	_buildHud()
 	_refreshRoleDisplay()
 	_refreshHotbarSelection()
+	_refreshInventoryModal()
+	_refreshCraftingModal()
 end
 
 function UIController.Start(): ()
@@ -361,15 +696,35 @@ function UIController.Start(): ()
 		hungerFill.Size = UDim2.new(hungerRatio, 0, 1, 0)
 	end)
 
+	Remotes.GetEvent("InventoryUpdated").OnClientEvent:Connect(function(updated: InventoryMap)
+		currentInventory = updated
+		_refreshInventoryModal()
+		_refreshCraftingModal()
+	end)
+
+	Remotes.GetEvent("ToastNotification").OnClientEvent:Connect(function(message: unknown, color: unknown)
+		if typeof(message) ~= "string" then
+			return
+		end
+		local resolvedColor = if typeof(color) == "Color3" then color :: Color3 else nil
+		_showToast(message, resolvedColor)
+	end)
+
 	UserInputService.InputBegan:Connect(function(input: InputObject, gameProcessed: boolean)
 		if gameProcessed then
 			return
 		end
 
 		if input.KeyCode == Enum.KeyCode.R then
-			roleModal.Visible = not roleModal.Visible
+			_toggleModal(roleModal)
+		elseif input.KeyCode == Enum.KeyCode.I then
+			_toggleModal(inventoryModal)
+		elseif input.KeyCode == Enum.KeyCode.C then
+			_toggleModal(craftingModal)
 		elseif input.KeyCode == Enum.KeyCode.H then
 			controlsPanel.Visible = not controlsPanel.Visible
+		elseif input.KeyCode == Enum.KeyCode.Escape then
+			_closeAllModals()
 		end
 	end)
 end

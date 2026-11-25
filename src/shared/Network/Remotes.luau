@@ -13,6 +13,11 @@ export type RemoteName =
 	| "SurvivalStateChanged"
 	| "SetSprinting"
 	| "RequestDodge"
+	| "InventoryUpdated"
+	| "GatherNode"
+	| "CraftRecipe"
+	| "UseItem"
+	| "ToastNotification"
 
 local REMOTE_NAMES: { RemoteName } = {
 	"SelectRole",
@@ -22,6 +27,11 @@ local REMOTE_NAMES: { RemoteName } = {
 	"SurvivalStateChanged",
 	"SetSprinting",
 	"RequestDodge",
+	"InventoryUpdated",
+	"GatherNode",
+	"CraftRecipe",
+	"UseItem",
+	"ToastNotification",
 }
 
 local Remotes = {}
