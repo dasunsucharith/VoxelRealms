@@ -1,5 +1,6 @@
 --!strict
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 local Workspace = game:GetService("Workspace")
@@ -37,6 +38,25 @@ local function _getPlayerReach(player: Player): number
 	return Constants.BASE_BUILD_REACH_STUDS * role.perks.buildReachMultiplier
 end
 
+local function _isOverlappingAnyPlayer(gridCoord: Vector3): boolean
+	local blockPos = VoxelGrid.gridToWorld(gridCoord)
+	local halfSize = Constants.VOXEL_SIZE_STUDS * 0.5
+
+	for _, otherPlayer in ipairs(Players:GetPlayers()) do
+		local origin = _getPlayerOrigin(otherPlayer)
+		if origin then
+			local dx = math.abs(origin.X - blockPos.X)
+			local dy = math.abs(origin.Y - blockPos.Y)
+			local dz = math.abs(origin.Z - blockPos.Z)
+			if dx < (halfSize + 1.2) and dz < (halfSize + 1.2) and dy < (halfSize + 2.5) then
+				return true
+			end
+		end
+	end
+
+	return false
+end
+
 function VoxelBuildService.Init(): ()
 	local existing = Workspace:FindFirstChild("VoxelWorld")
 	if existing and existing:IsA("Folder") then
@@ -68,6 +88,10 @@ function VoxelBuildService.Start(): ()
 			return
 		end
 
+		if _isOverlappingAnyPlayer(rawGridCoord) then
+			return
+		end
+
 		local key = VoxelGrid.gridToKey(rawGridCoord)
 		if placedBlocks[key] then
 			return
@@ -85,6 +109,7 @@ function VoxelBuildService.Start(): ()
 		part.Material = blockDef.material
 		part:SetAttribute("BlockId", blockDef.id)
 		part:SetAttribute("OwnerUserId", player.UserId)
+		part:SetAttribute("GridKey", key)
 		part.Parent = worldFolder
 
 		placedBlocks[key] = part
