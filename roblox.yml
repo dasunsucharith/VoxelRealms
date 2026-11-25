@@ -1,0 +1,161 @@
+---
+# Local Roblox + Luau standard library for Selene.
+# Eliminates flaky network timeouts fetching Roblox's 18MB API-Dump.json.
+# You can optionally overwrite this with the full auto-generated dump via:
+#   selene generate-roblox-std
+
+base: lua51
+lua_versions:
+  - luau
+
+globals:
+  # Roblox core runtime globals
+  game:
+    any: true
+  workspace:
+    any: true
+  script:
+    any: true
+  plugin:
+    any: true
+  shared:
+    any: true
+  _G:
+    any: true
+
+  # Luau & Roblox standard libraries
+  bit32:
+    any: true
+  buffer:
+    any: true
+  coroutine:
+    any: true
+  debug:
+    any: true
+  math:
+    any: true
+  os:
+    any: true
+  string:
+    any: true
+  table:
+    any: true
+  task:
+    any: true
+  utf8:
+    any: true
+
+  # Roblox constructors & datatypes
+  Axes:
+    any: true
+  BrickColor:
+    any: true
+  CatalogSearchParams:
+    any: true
+  CFrame:
+    any: true
+  Color3:
+    any: true
+  ColorSequence:
+    any: true
+  ColorSequenceKeypoint:
+    any: true
+  Content:
+    any: true
+  DateTime:
+    any: true
+  DockWidgetPluginGuiInfo:
+    any: true
+  Enum:
+    any: true
+  Faces:
+    any: true
+  FloatCurveKey:
+    any: true
+  Font:
+    any: true
+  Instance:
+    any: true
+  NumberRange:
+    any: true
+  NumberSequence:
+    any: true
+  NumberSequenceKeypoint:
+    any: true
+  OverlapParams:
+    any: true
+  Path2DControlPoint:
+    any: true
+  PathWaypoint:
+    any: true
+  PhysicalProperties:
+    any: true
+  Random:
+    any: true
+  Ray:
+    any: true
+  RaycastParams:
+    any: true
+  Rect:
+    any: true
+  Region3:
+    any: true
+  Region3int16:
+    any: true
+  RotationCurveKey:
+    any: true
+  SharedTable:
+    any: true
+  TweenInfo:
+    any: true
+  UDim:
+    any: true
+  UDim2:
+    any: true
+  Vector2:
+    any: true
+  Vector2int16:
+    any: true
+  Vector3:
+    any: true
+  Vector3int16:
+    any: true
+
+  # Roblox global functions
+  delay:
+    args:
+      - type: number
+      - type: function
+  elapsedTime:
+    args: []
+  gcinfo:
+    args: []
+  require:
+    args:
+      - type: any
+  settings:
+    args: []
+  spawn:
+    args:
+      - type: function
+  tick:
+    args: []
+  time:
+    args: []
+  typeof:
+    args:
+      - type: any
+  UserSettings:
+    args: []
+  version:
+    args: []
+  wait:
+    args:
+      - type: number
+        required: false
+  warn:
+    args:
+      - type: any
+        required: false
+        observes: read
+      - type: "..."

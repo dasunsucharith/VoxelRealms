@@ -7,11 +7,9 @@
 *.rbxlx~
 
 # Wally installed packages (reproducible via wally.toml + wally.lock)
-/Packages/*
-!/Packages/.gitkeep
-/ServerPackages/*
-!/ServerPackages/.gitkeep
-/DevPackages/*
+/Packages/
+/ServerPackages/
+/DevPackages/
 
 # Build outputs
 *.rbxl.build
