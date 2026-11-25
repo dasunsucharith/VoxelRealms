@@ -11,8 +11,10 @@ local Remotes = require(Shared.Network.Remotes)
 local GameTypes = require(Shared.Types.GameTypes)
 
 local Server = ServerScriptService:WaitForChild("Server")
+local DataService = require(Server.Services.DataService)
 local RoleService = require(Server.Services.RoleService)
 
+type PlayerProfile = GameTypes.PlayerProfile
 type SurvivalState = GameTypes.SurvivalState
 
 type RuntimePlayerData = {
@@ -21,9 +23,11 @@ type RuntimePlayerData = {
 	lastStaminaUse: number,
 	lastDodgeTime: number,
 	lastSyncTime: number,
+	lastPersistTime: number,
 }
 
 local SYNC_INTERVAL_SEC = 0.1
+local PROFILE_PERSIST_INTERVAL_SEC = 5.0
 
 local SurvivalService = {}
 local runtimeData: { [Player]: RuntimePlayerData } = {}
@@ -33,8 +37,7 @@ local function _getHumanoid(player: Player): Humanoid?
 	if not character then
 		return nil
 	end
-	local humanoid = character:FindFirstChildOfClass("Humanoid")
-	return humanoid
+	return character:FindFirstChildOfClass("Humanoid")
 end
 
 local function _applyWalkSpeed(player: Player, data: RuntimePlayerData): ()
@@ -46,6 +49,14 @@ local function _applyWalkSpeed(player: Player, data: RuntimePlayerData): ()
 	local role = RoleService.GetPlayerRole(player)
 	local baseSpeed = if data.isSprinting then Constants.SPRINT_SPEED else Constants.WALK_SPEED
 	humanoid.WalkSpeed = baseSpeed * role.perks.moveSpeedMultiplier
+end
+
+local function _persistStats(player: Player, data: RuntimePlayerData): ()
+	data.lastPersistTime = os.clock()
+	DataService.UpdateProfile(player, function(profile: PlayerProfile)
+		profile.health = data.state.health
+		profile.hunger = data.state.hunger
+	end)
 end
 
 local function _syncState(player: Player, data: RuntimePlayerData): ()
@@ -65,7 +76,7 @@ local function _bindCharacter(player: Player, character: Model): ()
 	end
 
 	humanoid.MaxHealth = data.state.maxHealth
-	humanoid.Health = data.state.maxHealth
+	humanoid.Health = math.clamp(data.state.health, 1, data.state.maxHealth)
 	data.state.health = humanoid.Health
 	data.state.stamina = data.state.maxStamina
 	data.isSprinting = false
@@ -77,25 +88,35 @@ local function _bindCharacter(player: Player, character: Model): ()
 		if current then
 			current.state.health = math.clamp(newHealth, 0, current.state.maxHealth)
 			_syncState(player, current)
+			_persistStats(player, current)
 		end
 	end)
 end
 
 local function _initPlayer(player: Player): ()
+	local profile = DataService.WaitForProfile(player)
+	if not player:IsDescendantOf(Players) then
+		return
+	end
+
 	local now = os.clock()
+	local savedHealth = if profile then profile.health else Constants.DEFAULT_MAX_HEALTH
+	local savedHunger = if profile then profile.hunger else Constants.DEFAULT_MAX_HUNGER
+
 	local data: RuntimePlayerData = {
 		state = {
-			health = Constants.DEFAULT_MAX_HEALTH,
+			health = savedHealth,
 			maxHealth = Constants.DEFAULT_MAX_HEALTH,
 			stamina = Constants.DEFAULT_MAX_STAMINA,
 			maxStamina = Constants.DEFAULT_MAX_STAMINA,
-			hunger = Constants.DEFAULT_MAX_HUNGER,
+			hunger = savedHunger,
 			maxHunger = Constants.DEFAULT_MAX_HUNGER,
 		},
 		isSprinting = false,
 		lastStaminaUse = 0,
 		lastDodgeTime = 0,
 		lastSyncTime = now,
+		lastPersistTime = now,
 	}
 
 	runtimeData[player] = data
@@ -138,6 +159,7 @@ function SurvivalService.ModifyStats(player: Player, healthDelta: number, stamin
 	end
 
 	_syncState(player, data)
+	_persistStats(player, data)
 end
 
 function SurvivalService.Init(): ()
@@ -148,15 +170,21 @@ function SurvivalService.Start(): ()
 	local setSprintingRemote = Remotes.GetEvent("SetSprinting")
 	local requestDodgeRemote = Remotes.GetEvent("RequestDodge")
 
-	Players.PlayerAdded:Connect(_initPlayer)
+	Players.PlayerAdded:Connect(function(player: Player)
+		task.spawn(_initPlayer, player)
+	end)
 
 	Players.PlayerRemoving:Connect(function(player: Player)
+		local data = runtimeData[player]
+		if data then
+			_persistStats(player, data)
+		end
 		runtimeData[player] = nil
 	end)
 
 	for _, player in ipairs(Players:GetPlayers()) do
 		if not runtimeData[player] then
-			_initPlayer(player)
+			task.spawn(_initPlayer, player)
 		end
 	end
 
@@ -227,6 +255,10 @@ function SurvivalService.Start(): ()
 
 			if now - data.lastSyncTime >= SYNC_INTERVAL_SEC then
 				_syncState(player, data)
+			end
+
+			if now - data.lastPersistTime >= PROFILE_PERSIST_INTERVAL_SEC then
+				_persistStats(player, data)
 			end
 		end
 	end)

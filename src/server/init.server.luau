@@ -11,6 +11,7 @@ type LifecycleModule = GameTypes.LifecycleModule
 local ServicesFolder = script:WaitForChild("Services")
 
 local SERVICE_ORDER = {
+	"DataService",
 	"RoleService",
 	"SurvivalService",
 	"InventoryService",

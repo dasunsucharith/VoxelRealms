@@ -92,6 +92,14 @@ export type SurvivalState = {
 	maxHunger: number,
 }
 
+export type PlayerProfile = {
+	schemaVersion: number,
+	roleId: RoleId,
+	inventory: InventoryMap,
+	health: number,
+	hunger: number,
+}
+
 export type LifecycleModule = {
 	Init: (() -> ())?,
 	Start: (() -> ())?,
