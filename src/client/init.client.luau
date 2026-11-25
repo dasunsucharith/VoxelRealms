@@ -13,6 +13,7 @@ local CONTROLLER_ORDER = {
 	"CameraController",
 	"MovementController",
 	"BuildController",
+	"GatherController",
 	"UIController",
 }
 

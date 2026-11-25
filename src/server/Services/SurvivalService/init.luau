@@ -115,6 +115,31 @@ function SurvivalService.GetState(player: Player): SurvivalState?
 	return if data then data.state else nil
 end
 
+function SurvivalService.ModifyStats(player: Player, healthDelta: number, staminaDelta: number, hungerDelta: number): ()
+	local data = runtimeData[player]
+	if not data then
+		return
+	end
+
+	if healthDelta ~= 0 then
+		data.state.health = math.clamp(data.state.health + healthDelta, 0, data.state.maxHealth)
+		local humanoid = _getHumanoid(player)
+		if humanoid then
+			humanoid.Health = data.state.health
+		end
+	end
+
+	if staminaDelta ~= 0 then
+		data.state.stamina = math.clamp(data.state.stamina + staminaDelta, 0, data.state.maxStamina)
+	end
+
+	if hungerDelta ~= 0 then
+		data.state.hunger = math.clamp(data.state.hunger + hungerDelta, 0, data.state.maxHunger)
+	end
+
+	_syncState(player, data)
+end
+
 function SurvivalService.Init(): ()
 	-- Reserved for dependency setup.
 end
