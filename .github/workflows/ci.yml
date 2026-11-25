@@ -1,0 +1,23 @@
+name: Code Quality CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  lint-and-format:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rokit toolchain
+        uses: rojo-rbx/setup-rokit@v0.1.2
+
+      - name: Check Luau formatting (StyLua)
+        run: stylua --check src
+
+      - name: Lint Luau code (Selene)
+        run: selene src

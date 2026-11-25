@@ -1,0 +1,14 @@
+[package]
+name = "voxelrealms/voxel-realms"
+description = "Dawnlands-inspired Voxel Survival Roleplay game on Roblox (IP ready for future standalone PC release)"
+version = "0.1.0"
+registry = "https://github.com/UpliftGames/wally-index"
+realm = "shared"
+private = true
+
+[dependencies]
+Trove = "sleitnick/trove@1.5.1"
+Signal = "sleitnick/signal@2.0.1"
+
+[server-dependencies]
+# Add server-only packages here (e.g. ProfileStore when implementing DataService)

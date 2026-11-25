@@ -1,0 +1,37 @@
+# Roblox Studio lock & auto-save files
+*.rbxl.lock
+*.rbxlx.lock
+*.rbxm.lock
+*.rbxmx.lock
+*.rbxl~
+*.rbxlx~
+
+# Wally installed packages (reproducible via wally.toml + wally.lock)
+/Packages/*
+!/Packages/.gitkeep
+/ServerPackages/*
+!/ServerPackages/.gitkeep
+/DevPackages/*
+
+# Build outputs
+*.rbxl.build
+dist/
+build/
+
+# Blender backups & temp renders
+*.blend1
+*.blend2
+*.blend@
+assets/blender/**/renders_tmp/
+
+# Logs & temporary files
+*.log
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor local state
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
