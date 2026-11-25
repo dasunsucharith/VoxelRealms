@@ -70,6 +70,8 @@ All Client ↔ Server communication goes through `ReplicatedStorage.Remotes` man
 | `PlaceVoxel` | Client → Server | Request placing a voxel block at a grid coordinate |
 | `RemoveVoxel` | Client → Server | Request breaking/removing a voxel block at a grid coordinate |
 | `SurvivalStateChanged` | Server → Client | Sync authoritative Health/Stamina/Hunger snapshot |
+| `SetSprinting` | Client → Server | Toggle authoritative sprint state (drains stamina & applies role move speed) |
+| `RequestDodge` | Client → Server | Request dodge dash stamina deduction with server cooldown validation |
 
 *(Add every new remote here as it is implemented.)*
 

@@ -11,7 +11,9 @@ local ControllersFolder = script:WaitForChild("Controllers")
 
 local CONTROLLER_ORDER = {
 	"CameraController",
+	"MovementController",
 	"BuildController",
+	"UIController",
 }
 
 local loadedControllers: { { name: string, module: LifecycleModule } } = {}

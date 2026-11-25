@@ -5,7 +5,14 @@ local RunService = game:GetService("RunService")
 
 local FOLDER_NAME = "Remotes"
 
-export type RemoteName = "SelectRole" | "RoleUpdated" | "PlaceVoxel" | "RemoveVoxel" | "SurvivalStateChanged"
+export type RemoteName =
+	"SelectRole"
+	| "RoleUpdated"
+	| "PlaceVoxel"
+	| "RemoveVoxel"
+	| "SurvivalStateChanged"
+	| "SetSprinting"
+	| "RequestDodge"
 
 local REMOTE_NAMES: { RemoteName } = {
 	"SelectRole",
@@ -13,6 +20,8 @@ local REMOTE_NAMES: { RemoteName } = {
 	"PlaceVoxel",
 	"RemoveVoxel",
 	"SurvivalStateChanged",
+	"SetSprinting",
+	"RequestDodge",
 }
 
 local Remotes = {}
