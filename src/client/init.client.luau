@@ -14,6 +14,7 @@ local CONTROLLER_ORDER = {
 	"MovementController",
 	"BuildController",
 	"GatherController",
+	"CombatController",
 	"UIController",
 }
 

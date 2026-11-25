@@ -34,6 +34,10 @@ export type ItemId =
 	| "iron_ore"
 	| "herb"
 	| "berry"
+	| "raw_meat"
+	| "wolf_pelt"
+	| "slime_gel"
+	| "roast_meat"
 	| "plank_block"
 	| "stone_block"
 	| "timber_block"
@@ -98,6 +102,25 @@ export type PlayerProfile = {
 	inventory: InventoryMap,
 	health: number,
 	hunger: number,
+}
+
+export type CreatureKind = "slime" | "wolf"
+
+export type CreatureConfig = {
+	kind: CreatureKind,
+	displayName: string,
+	maxHealth: number,
+	moveSpeed: number,
+	damage: number,
+	attackCooldown: number,
+	attackRange: number,
+	aggroRange: number,
+	leashRange: number,
+	respawnSeconds: number,
+	dropItemId: ItemId,
+	dropCount: number,
+	bonusItemId: ItemId?,
+	bonusCount: number?,
 }
 
 export type LifecycleModule = {

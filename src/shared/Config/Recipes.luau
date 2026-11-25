@@ -83,6 +83,28 @@ local Recipes: { RecipeDefinition } = {
 		},
 		requiredRole = "alchemist",
 	},
+	{
+		id = "craft_roast_meat",
+		displayName = "Roast Meat (x2)",
+		description = "Cook 2 Raw Meat into hearty Roast Meat.",
+		outputItemId = "roast_meat",
+		outputCount = 2,
+		ingredients = {
+			raw_meat = 2,
+		},
+	},
+	{
+		id = "hunter_trail_feast",
+		displayName = "Hunter's Trail Roast (x2)",
+		description = "Hunter recipe: sear 1 Raw Meat and 1 Berry into 2 hearty Roast Meat.",
+		outputItemId = "roast_meat",
+		outputCount = 2,
+		ingredients = {
+			raw_meat = 1,
+			berry = 1,
+		},
+		requiredRole = "hunter",
+	},
 }
 
 return table.freeze(Recipes)
