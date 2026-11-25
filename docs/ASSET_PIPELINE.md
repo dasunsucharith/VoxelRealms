@@ -52,3 +52,23 @@ assets/
 - Maintain **one master voxel humanoid skeleton** (`assets/blender/characters/vr_char_base_rig.blend`).
 - All playable Role outfits and humanoid NPCs bind to this exact skeleton so every animation (`Idle`, `Walk`, `Run`, `DodgeRoll`, `Chop`, `Mine`, `SwordSlash`, `BowDraw`, `PlaceBlock`) is created once and shared across all roles.
 - Include attachment socket bones (`Socket_HandR`, `Socket_HandL`, `Socket_Back`, `Socket_Head`) for equipping voxel tools, weapons, shields, and helmets.
+
+---
+
+## 5. Current Asset Inventory (`art/base-voxel-pack`)
+All starter assets are procedurally reproducible via `tools/blender/build_voxel_pack.py` (Blender 5.3) and share `assets/textures/voxel_palette_v1.png`:
+
+| Asset | Source `.blend` | Exports (`.fbx` & `.glb`) | Notes |
+| :--- | :--- | :--- | :--- |
+| **Base Voxel Character** | `assets/blender/characters/vr_char_base_rig.blend` | `assets/exports/characters/vr_char_base_rig.{fbx,glb}` | 1.8m humanoid rig + 3 actions (`Idle`, `Walk`, `Swing`) + attachment sockets |
+| **Voxel Wood Axe** | `assets/blender/tools/vr_tool_axe_wood.blend` | `assets/exports/tools/vr_tool_axe_wood.{fbx,glb}` | Origin at leather grip for `Socket_HandR` |
+| **Voxel Stone Pickaxe** | `assets/blender/tools/vr_tool_pickaxe_stone.blend` | `assets/exports/tools/vr_tool_pickaxe_stone.{fbx,glb}` | Origin at leather grip for `Socket_HandR` |
+| **Voxel Campfire** | `assets/blender/props/vr_prop_campfire.blend` | `assets/exports/props/vr_prop_campfire.{fbx,glb}` | 1m × 1m stone ring, crossed logs, voxel flames |
+| **Voxel Pine Tree** | `assets/blender/environment/vr_env_pine_tree.blend` | `assets/exports/environment/vr_env_pine_tree.{fbx,glb}` | ~3.8m stepped voxel pine tree |
+| **Voxel Iron Ore Vein** | `assets/blender/environment/vr_env_iron_vein.blend` | `assets/exports/environment/vr_env_iron_vein.{fbx,glb}` | ~1.5m granite cluster with copper-iron voxel ore |
+
+### Importing into Roblox Studio (Quick Steps)
+1. In Roblox Studio, click **Avatar → Import 3D** (or **Home → Import 3D**) and select any `.fbx` under `assets/exports/`.
+2. Textures are embedded automatically (`voxel_palette_v1.png`).
+3. Set scale conversion to **`Studs` / `4x`** if you want `1 Blender meter = 4 Roblox studs` (1 voxel block).
+4. For `vr_char_base_rig.fbx`, open **Plugins → Animation Editor** on the imported rig to preview/publish the baked `Idle`, `Walk`, and `Swing` animations!
