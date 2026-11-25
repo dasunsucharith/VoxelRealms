@@ -7,6 +7,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 - **Sprint 1 Core Feel (`feat/sprint1-core-feel`):**
+  - Fixed `CameraController` 1st-to-3rd-person toggle (`V` key) by keeping `CameraMode.Classic` and snapping zoom bounds across render steps before restoring scroll zoom.
   - Client voxel building (`BuildController`) with mouse raycasting, translucent 4×4×4 ghost preview, reach tinting, `[B]` build mode toggle, `[1-5]` hotbar block selection, and Left/Right-click place & remove.
   - Player character overlap validation in `VoxelBuildService` to prevent trapping players inside placed voxels.
   - Authoritative stamina/hunger simulation, sprint speed + role perk multipliers, and dodge validation in `SurvivalService`.
