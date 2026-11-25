@@ -59,6 +59,8 @@ Each developer or AI agent can own a specific domain folder with minimal overlap
 | **Inventory & Crafting** | `src/server/Services/InventoryService` | `src/client/Controllers/UIController` | `Config/Items`, `Config/Recipes`, `Network/Remotes` |
 | **World & Gathering** | `src/server/Services/WorldService` | `src/client/Controllers/GatherController` | `Config/ResourceNodes`, `Network/Remotes` |
 | **Day/Night & Campfires** | `src/server/Services/AtmosphereService` | `src/client/Controllers/UIController` | `Config/Constants`, `Workspace` attributes |
+| **Creatures & AI** | `src/server/Services/CreatureService` | — (replicated models & HP bars) | `Config/Creatures`, `Config/Items` |
+| **Action Combat** | `src/server/Services/CombatService` | `src/client/Controllers/CombatController` | `Config/Constants`, `Network/Remotes` |
 
 ---
 
@@ -79,6 +81,8 @@ All Client ↔ Server communication goes through `ReplicatedStorage.Remotes` man
 | `CraftRecipe` | Client → Server | Request crafting a recipe ID (validates ingredients & Role requirements) |
 | `UseItem` | Client → Server | Request consuming a survival item (`berry`, `healing_tonic`, `campfire_kit`) |
 | `ToastNotification` | Server → Client | Display feedback toast message in the client HUD |
+| `RequestAttack` | Client → Server | Request stamina-checked melee strike along aim vector |
+| `CombatFeedback` | Server → Client | Replicate hit position & damage amount for floating damage numbers |
 
 *(Add every new remote here as it is implemented.)*
 

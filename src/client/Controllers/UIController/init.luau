@@ -28,6 +28,10 @@ local ITEM_DISPLAY_ORDER: { ItemId } = {
 	"iron_ore",
 	"herb",
 	"berry",
+	"raw_meat",
+	"wolf_pelt",
+	"slime_gel",
+	"roast_meat",
 	"plank_block",
 	"timber_block",
 	"stone_block",
@@ -574,7 +578,7 @@ local function _buildHud(): ()
 	-- Top-Right: Compact Controls Guide
 	controlsPanel = Instance.new("Frame")
 	controlsPanel.Name = "ControlsPanel"
-	controlsPanel.Size = UDim2.new(0, 225, 0, 184)
+	controlsPanel.Size = UDim2.new(0, 225, 0, 200)
 	controlsPanel.Position = UDim2.new(1, -241, 0, 16)
 	controlsPanel.BackgroundColor3 = Color3.fromRGB(20, 23, 30)
 	controlsPanel.BackgroundTransparency = 0.22
@@ -593,6 +597,7 @@ local function _buildHud(): ()
 	controlsText.Text = table.concat({
 		"CONTROLS  [H] Hide",
 		"[V] 1st / 3rd Person",
+		"[F] Melee Attack",
 		"[E] Gather Resources",
 		"[I] Inventory  |  [C] Craft",
 		"[R] Switch Role",
