@@ -11,6 +11,7 @@ local Remotes = require(Shared.Network.Remotes)
 local GameTypes = require(Shared.Types.GameTypes)
 
 local Server = ServerScriptService:WaitForChild("Server")
+local AtmosphereService = require(Server.Services.AtmosphereService)
 local InventoryService = require(Server.Services.InventoryService)
 local RoleService = require(Server.Services.RoleService)
 
@@ -289,7 +290,115 @@ function WorldService.Init(): ()
 	end
 end
 
+local function _styleStarterMeadowAndRuins(): ()
+	-- Tint starter Baseplate to lush Dawnlands voxel meadow grass
+	local baseplate = Workspace:FindFirstChild("Baseplate")
+	if baseplate and baseplate:IsA("BasePart") then
+		baseplate.Color = Color3.fromRGB(92, 148, 76)
+		baseplate.Material = Enum.Material.SmoothPlastic
+	end
+
+	if Workspace:FindFirstChild("AncientRuins") then
+		return
+	end
+
+	local ruins = Instance.new("Folder")
+	ruins.Name = "AncientRuins"
+	ruins.Parent = Workspace
+
+	local shrineCenter = Vector3.new(0, 0, -18)
+	local stoneMid = Color3.fromRGB(134, 140, 148)
+	local stoneDark = Color3.fromRGB(102, 108, 118)
+	local mossGreen = Color3.fromRGB(74, 134, 68)
+
+	-- Stepped voxel shrine plinth
+	_makeVoxelCube(
+		ruins,
+		"PlinthBase",
+		Vector3.new(16, 1, 16),
+		shrineCenter + Vector3.new(0, 0.5, 0),
+		stoneDark,
+		Enum.Material.Slate
+	)
+	_makeVoxelCube(
+		ruins,
+		"PlinthTop",
+		Vector3.new(12, 1, 12),
+		shrineCenter + Vector3.new(0, 1.5, 0),
+		stoneMid,
+		Enum.Material.Slate
+	)
+
+	-- 4 weathered & broken voxel ruin pillars with mossy accents
+	local pillarData = {
+		{ offset = Vector3.new(-5.5, 0, -5.5), height = 10 },
+		{ offset = Vector3.new(5.5, 0, -5.5), height = 8 },
+		{ offset = Vector3.new(-5.5, 0, 5.5), height = 6 },
+		{ offset = Vector3.new(5.5, 0, 5.5), height = 11 },
+	}
+	for index, info in ipairs(pillarData) do
+		local base = shrineCenter + info.offset + Vector3.new(0, 2, 0)
+		_makeVoxelCube(
+			ruins,
+			"Pillar_" .. tostring(index),
+			Vector3.new(2, info.height, 2),
+			base + Vector3.new(0, info.height * 0.5, 0),
+			stoneMid,
+			Enum.Material.Slate
+		)
+		_makeVoxelCube(
+			ruins,
+			"PillarMoss_" .. tostring(index),
+			Vector3.new(2.2, 0.8, 2.2),
+			base + Vector3.new(0, info.height + 0.4, 0),
+			mossGreen,
+			Enum.Material.SmoothPlastic
+		)
+	end
+
+	-- Central glowing Ancient Voxel Rune Crystal
+	local altar = _makeVoxelCube(
+		ruins,
+		"AltarPedestal",
+		Vector3.new(3, 2, 3),
+		shrineCenter + Vector3.new(0, 3, 0),
+		stoneDark,
+		Enum.Material.Slate
+	)
+	local rune = _makeVoxelCube(
+		ruins,
+		"AncientRune",
+		Vector3.new(1.6, 1.6, 1.6),
+		altar.Position + Vector3.new(0, 2.6, 0),
+		Color3.fromRGB(85, 225, 255),
+		Enum.Material.Neon
+	)
+	rune.Orientation = Vector3.new(35, 45, 0)
+
+	local runeLight = Instance.new("PointLight")
+	runeLight.Color = Color3.fromRGB(95, 225, 255)
+	runeLight.Brightness = 2.0
+	runeLight.Range = 24
+	runeLight.Parent = rune
+
+	-- Cobblestone voxel stepping path from spawn toward the ruins
+	for stepIdx = 1, 4 do
+		_makeVoxelCube(
+			ruins,
+			"PathStone_" .. tostring(stepIdx),
+			Vector3.new(4, 0.3, 2.5),
+			Vector3.new(0, 0.15, -3 - (stepIdx * 3.2)),
+			if stepIdx % 2 == 0 then stoneMid else stoneDark,
+			Enum.Material.Slate
+		)
+	end
+
+	-- Starter Ancient Campfire beside the ruin clearing for warm night refuge
+	AtmosphereService.SpawnCampfireAt(Vector3.new(10, 0, -10), 0)
+end
+
 function WorldService.Start(): ()
+	_styleStarterMeadowAndRuins()
 	_spawnInitialNodes()
 
 	local gatherRemote = Remotes.GetEvent("GatherNode")
