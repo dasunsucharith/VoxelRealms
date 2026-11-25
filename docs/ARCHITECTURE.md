@@ -58,6 +58,7 @@ Each developer or AI agent can own a specific domain folder with minimal overlap
 | **Camera & Movement** | — (anti-cheat checks later) | `CameraController`, `MovementController` | `Config/Constants` |
 | **Inventory & Crafting** | `src/server/Services/InventoryService` | `src/client/Controllers/UIController` | `Config/Items`, `Config/Recipes`, `Network/Remotes` |
 | **World & Gathering** | `src/server/Services/WorldService` | `src/client/Controllers/GatherController` | `Config/ResourceNodes`, `Network/Remotes` |
+| **Day/Night & Campfires** | `src/server/Services/AtmosphereService` | `src/client/Controllers/UIController` | `Config/Constants`, `Workspace` attributes |
 
 ---
 

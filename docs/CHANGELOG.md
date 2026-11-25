@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **Sprint 3 — World Atmosphere, Campfires & Starter Ruins (`feat/world-atmosphere`):**
+  - Implemented `AtmosphereService` with a Dawnlands-inspired 24-hour Day/Night cycle (`Dawn`, `Day`, `Dusk`, `Night`), `Atmosphere` + `BloomEffect` lighting, and glowing placeable Voxel Campfires with flickering warm light, embers, and passive Health/Stamina/Hunger regeneration aura.
+  - Upgraded `campfire_kit` to a real placeable item in `InventoryService` and `UIController` (`PLACE` button).
+  - Added lush meadow ground styling, a Voxel Ancient Ruin Shrine with glowing rune crystal, cobblestone stepping path, and a starter lit campfire in `WorldService`, plus a live Day/Clock pill in `UIController`.
 - **Sprint 2 — Cloud Data Persistence (`feat/data-persistence`):**
   - Implemented `DataService` (`VoxelRealms_PlayerData_v1`) with strict `PlayerProfile` schema reconciliation, `UpdateAsync` retry backoff, 120s dirty-flag autosave, `BindToClose` flush, and graceful offline Studio session fallback.
   - Wired `RoleService`, `InventoryService`, and `SurvivalService` to load and persist player roles, inventories, health, and hunger across sessions.

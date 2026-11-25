@@ -12,6 +12,7 @@ local Remotes = require(Shared.Network.Remotes)
 local GameTypes = require(Shared.Types.GameTypes)
 
 local Server = ServerScriptService:WaitForChild("Server")
+local AtmosphereService = require(Server.Services.AtmosphereService)
 local DataService = require(Server.Services.DataService)
 local RoleService = require(Server.Services.RoleService)
 local SurvivalService = require(Server.Services.SurvivalService)
@@ -195,17 +196,32 @@ function InventoryService.Start(): ()
 		end
 
 		local def = (Items :: { [string]: ItemDefinition })[rawItemId]
-		if not def or def.category ~= "consumable" then
+		if not def then
 			return
 		end
 
 		local itemId = def.id
-		if not InventoryService.RemoveItems(player, { [itemId] = 1 }) then
-			return
-		end
+		if def.category == "consumable" then
+			if not InventoryService.RemoveItems(player, { [itemId] = 1 }) then
+				return
+			end
 
-		SurvivalService.ModifyStats(player, def.healthRestore or 0, def.staminaRestore or 0, def.hungerRestore or 0)
-		_sendToast(player, string.format("Used %s", def.displayName), def.accentColor)
+			SurvivalService.ModifyStats(player, def.healthRestore or 0, def.staminaRestore or 0, def.hungerRestore or 0)
+			_sendToast(player, string.format("Used %s", def.displayName), def.accentColor)
+		elseif def.category == "placeable" and itemId == "campfire_kit" then
+			if not InventoryService.HasItems(player, { [itemId] = 1 }) then
+				return
+			end
+
+			local ok, feedback = AtmosphereService.PlaceCampfireForPlayer(player)
+			if not ok then
+				_sendToast(player, feedback, Color3.fromRGB(235, 130, 100))
+				return
+			end
+
+			InventoryService.RemoveItems(player, { [itemId] = 1 })
+			_sendToast(player, feedback, def.accentColor)
+		end
 	end)
 end
 

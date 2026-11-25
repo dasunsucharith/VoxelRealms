@@ -3,6 +3,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Blocks = require(Shared.Config.Blocks)
@@ -43,6 +44,7 @@ local staminaFill: Frame
 local hungerFill: Frame
 local roleBadgeLabel: TextLabel
 local roleAccentStrip: Frame
+local clockLabel: TextLabel
 local buildModeLabel: TextLabel
 local roleModal: Frame
 local inventoryModal: Frame
@@ -169,13 +171,15 @@ local function _refreshInventoryModal(): ()
 			desc.TextXAlignment = Enum.TextXAlignment.Left
 			desc.Parent = row
 
-			if def.category == "consumable" then
+			if def.category == "consumable" or def.category == "placeable" then
 				local useBtn = Instance.new("TextButton")
 				useBtn.Size = UDim2.new(0, 74, 0, 30)
 				useBtn.Position = UDim2.new(1, -86, 0.5, -15)
-				useBtn.BackgroundColor3 = Color3.fromRGB(68, 175, 108)
+				useBtn.BackgroundColor3 = if def.category == "placeable"
+					then Color3.fromRGB(225, 130, 52)
+					else Color3.fromRGB(68, 175, 108)
 				useBtn.Font = Enum.Font.GothamBold
-				useBtn.Text = "USE"
+				useBtn.Text = if def.category == "placeable" then "PLACE" else "USE"
 				useBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 				useBtn.TextSize = 12
 				useBtn.Parent = row
@@ -183,6 +187,9 @@ local function _refreshInventoryModal(): ()
 
 				useBtn.MouseButton1Click:Connect(function()
 					Remotes.GetEvent("UseItem"):FireServer(itemId)
+					if def.category == "placeable" then
+						_closeAllModals()
+					end
 				end)
 			end
 		end
@@ -451,6 +458,27 @@ local function _buildHud(): ()
 	craftQuickBtn.Parent = screenGui
 	_addCorner(craftQuickBtn, 7)
 
+	-- Top-Left: Day Phase & Clock Pill
+	local clockFrame = Instance.new("Frame")
+	clockFrame.Name = "ClockPill"
+	clockFrame.Size = UDim2.new(0, 230, 0, 28)
+	clockFrame.Position = UDim2.new(0, 16, 0, 98)
+	clockFrame.BackgroundColor3 = Color3.fromRGB(20, 24, 32)
+	clockFrame.BackgroundTransparency = 0.2
+	clockFrame.Parent = screenGui
+	_addCorner(clockFrame, 7)
+
+	clockLabel = Instance.new("TextLabel")
+	clockLabel.Size = UDim2.new(1, -16, 1, 0)
+	clockLabel.Position = UDim2.new(0, 8, 0, 0)
+	clockLabel.BackgroundTransparency = 1
+	clockLabel.Font = Enum.Font.GothamBold
+	clockLabel.Text = "DAY  08:30"
+	clockLabel.TextColor3 = Color3.fromRGB(250, 224, 145)
+	clockLabel.TextSize = 12
+	clockLabel.TextXAlignment = Enum.TextXAlignment.Left
+	clockLabel.Parent = clockFrame
+
 	-- Bottom-Left: Survival Bars (HP, Stamina, Hunger)
 	local survivalFrame = Instance.new("Frame")
 	survivalFrame.Name = "SurvivalBars"
@@ -671,18 +699,40 @@ local function _buildHud(): ()
 	end)
 end
 
+local function _refreshClockDisplay(): ()
+	local rawClock = Workspace:GetAttribute("ClockTime")
+	local rawPhase = Workspace:GetAttribute("DayPhase")
+	local hourFloat = if typeof(rawClock) == "number" then rawClock else Constants.START_CLOCK_TIME
+	local phase = if typeof(rawPhase) == "string" then rawPhase else "Day"
+
+	local hours = math.floor(hourFloat) % 24
+	local minutes = math.floor((hourFloat - math.floor(hourFloat)) * 60)
+	clockLabel.Text = string.format("%s  %02d:%02d", string.upper(phase), hours, minutes)
+
+	if phase == "Dawn" or phase == "Dusk" then
+		clockLabel.TextColor3 = Color3.fromRGB(255, 178, 112)
+	elseif phase == "Night" then
+		clockLabel.TextColor3 = Color3.fromRGB(150, 185, 255)
+	else
+		clockLabel.TextColor3 = Color3.fromRGB(252, 230, 142)
+	end
+end
+
 function UIController.Init(): ()
 	_buildHud()
 	_refreshRoleDisplay()
 	_refreshHotbarSelection()
 	_refreshInventoryModal()
 	_refreshCraftingModal()
+	_refreshClockDisplay()
 end
 
 function UIController.Start(): ()
 	localPlayer:GetAttributeChangedSignal("RoleId"):Connect(_refreshRoleDisplay)
 	localPlayer:GetAttributeChangedSignal("ActiveBlockId"):Connect(_refreshHotbarSelection)
 	localPlayer:GetAttributeChangedSignal("BuildModeEnabled"):Connect(_refreshHotbarSelection)
+	Workspace:GetAttributeChangedSignal("ClockTime"):Connect(_refreshClockDisplay)
+	Workspace:GetAttributeChangedSignal("DayPhase"):Connect(_refreshClockDisplay)
 
 	Remotes.GetEvent("SurvivalStateChanged").OnClientEvent:Connect(function(state: SurvivalState)
 		localPlayer:SetAttribute("CurrentStamina", state.stamina)

@@ -91,12 +91,10 @@ local Items: { [ItemId]: ItemDefinition } = {
 	campfire_kit = {
 		id = "campfire_kit",
 		displayName = "Campfire Kit",
-		category = "consumable",
-		description = "Warm camp supplies. Use to rest and restore +35 Hunger & +25 Health.",
+		category = "placeable",
+		description = "Place a glowing Voxel Campfire in front of you. Lights the night & heals nearby players.",
 		accentColor = Color3.fromRGB(240, 135, 50),
 		maxStack = 10,
-		healthRestore = 25,
-		hungerRestore = 35,
 	},
 }
 

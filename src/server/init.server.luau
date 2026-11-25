@@ -14,6 +14,7 @@ local SERVICE_ORDER = {
 	"DataService",
 	"RoleService",
 	"SurvivalService",
+	"AtmosphereService",
 	"InventoryService",
 	"WorldService",
 	"VoxelBuildService",
