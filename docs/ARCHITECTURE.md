@@ -87,3 +87,11 @@ All Client ↔ Server communication goes through `ReplicatedStorage.Remotes` man
 - `VOXEL_SIZE_STUDS = 4` (`4×4×4` studs per block).
 - World positions snap cleanly to integer grid coordinates `(gx, gy, gz)` via `VoxelGrid.worldToGrid(pos)` and `VoxelGrid.gridToWorld(gridPos)`.
 - Placed blocks are keyed by string `"gx,gy,gz"` on the server (`VoxelBuildService`) for $O(1)$ lookup, collision validation, ownership checks, and delta persistence.
+
+---
+
+## 6. Cloud Persistence (`src/server/Services/DataService/init.luau`)
+- **Store:** `DataStoreService:GetDataStore("VoxelRealms_PlayerData_v1")`, keyed by `"player_<UserId>"`.
+- **Schema (`PlayerProfile` v1):** `roleId`, sanitized `inventory`, `health`, and `hunger`.
+- **Safety:** Uses `UpdateAsync` with up to 3 retry attempts, 120-second background autosave for dirty profiles, immediate save on `PlayerRemoving`, and `game:BindToClose` shutdown flush.
+- **Studio Offline Fallback:** When running an unpublished local `.rbxl` shell in Roblox Studio without Studio API Services enabled, `DataService` automatically falls back to clean in-memory session profiles so local testing never errors.

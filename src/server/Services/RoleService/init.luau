@@ -2,6 +2,7 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Constants = require(Shared.Config.Constants)
@@ -9,16 +10,36 @@ local Roles = require(Shared.Config.Roles)
 local Remotes = require(Shared.Network.Remotes)
 local GameTypes = require(Shared.Types.GameTypes)
 
+local Server = ServerScriptService:WaitForChild("Server")
+local DataService = require(Server.Services.DataService)
+
 type RoleId = GameTypes.RoleId
 type RoleDefinition = GameTypes.RoleDefinition
+type PlayerProfile = GameTypes.PlayerProfile
 
 local RoleService = {}
 local playerRoles: { [Player]: RoleId } = {}
 
-local function _setRole(player: Player, roleId: RoleId): ()
+local function _setRole(player: Player, roleId: RoleId, persist: boolean): ()
 	playerRoles[player] = roleId
 	player:SetAttribute("RoleId", roleId)
 	Remotes.GetEvent("RoleUpdated"):FireAllClients(player.UserId, roleId)
+
+	if persist then
+		DataService.UpdateProfile(player, function(profile: PlayerProfile)
+			profile.roleId = roleId
+		end)
+	end
+end
+
+local function _initPlayer(player: Player): ()
+	local profile = DataService.WaitForProfile(player)
+	if not player:IsDescendantOf(Players) then
+		return
+	end
+
+	local initialRole: RoleId = if profile then profile.roleId else Constants.DEFAULT_ROLE :: RoleId
+	_setRole(player, initialRole, false)
 end
 
 function RoleService.GetPlayerRole(player: Player): RoleDefinition
@@ -34,7 +55,7 @@ function RoleService.Start(): ()
 	local selectRoleRemote = Remotes.GetEvent("SelectRole")
 
 	Players.PlayerAdded:Connect(function(player: Player)
-		_setRole(player, Constants.DEFAULT_ROLE :: RoleId)
+		task.spawn(_initPlayer, player)
 	end)
 
 	Players.PlayerRemoving:Connect(function(player: Player)
@@ -43,7 +64,7 @@ function RoleService.Start(): ()
 
 	for _, player in ipairs(Players:GetPlayers()) do
 		if not playerRoles[player] then
-			_setRole(player, Constants.DEFAULT_ROLE :: RoleId)
+			task.spawn(_initPlayer, player)
 		end
 	end
 
@@ -57,7 +78,7 @@ function RoleService.Start(): ()
 			return
 		end
 
-		_setRole(player, definition.id)
+		_setRole(player, definition.id, true)
 	end)
 end
 

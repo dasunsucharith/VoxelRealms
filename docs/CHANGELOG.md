@@ -6,6 +6,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **Sprint 2 — Cloud Data Persistence (`feat/data-persistence`):**
+  - Implemented `DataService` (`VoxelRealms_PlayerData_v1`) with strict `PlayerProfile` schema reconciliation, `UpdateAsync` retry backoff, 120s dirty-flag autosave, `BindToClose` flush, and graceful offline Studio session fallback.
+  - Wired `RoleService`, `InventoryService`, and `SurvivalService` to load and persist player roles, inventories, health, and hunger across sessions.
 - **Sprint 2 — Survival Gathering, Inventory & Crafting (`feat/survival-gathering`):**
   - Added data-driven configs for survival items (`Config/Items.luau`), crafting recipes including Role-exclusive blueprints (`Config/Recipes.luau`), and voxel resource nodes (`Config/ResourceNodes.luau`).
   - Implemented `WorldService` spawning voxel-built pine trees, stone boulders, iron ore veins, and berry/herb bushes with Role perk bonuses (Blacksmith mining speed, Alchemist forage yield) and respawn timers.

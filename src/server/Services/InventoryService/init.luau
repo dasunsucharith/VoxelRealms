@@ -12,15 +12,17 @@ local Remotes = require(Shared.Network.Remotes)
 local GameTypes = require(Shared.Types.GameTypes)
 
 local Server = ServerScriptService:WaitForChild("Server")
+local DataService = require(Server.Services.DataService)
 local RoleService = require(Server.Services.RoleService)
 local SurvivalService = require(Server.Services.SurvivalService)
 
 type ItemId = GameTypes.ItemId
 type ItemDefinition = GameTypes.ItemDefinition
 type InventoryMap = GameTypes.InventoryMap
+type PlayerProfile = GameTypes.PlayerProfile
 type RecipeDefinition = GameTypes.RecipeDefinition
 
-local STARTER_ITEMS: { [ItemId]: number } = {
+local STARTER_ITEMS: InventoryMap = {
 	wood = 6,
 	stone = 4,
 	berry = 3,
@@ -30,10 +32,19 @@ local InventoryService = {}
 local inventories: { [Player]: InventoryMap } = {}
 local recipesById: { [string]: RecipeDefinition } = {}
 
-local function _syncInventory(player: Player): ()
+local function _syncInventory(player: Player, persist: boolean): ()
 	local inv = inventories[player]
-	if inv then
-		Remotes.GetEvent("InventoryUpdated"):FireClient(player, table.clone(inv))
+	if not inv then
+		return
+	end
+
+	local snapshot = table.clone(inv)
+	Remotes.GetEvent("InventoryUpdated"):FireClient(player, snapshot)
+
+	if persist then
+		DataService.UpdateProfile(player, function(profile: PlayerProfile)
+			profile.inventory = snapshot
+		end)
 	end
 end
 
@@ -42,8 +53,18 @@ local function _sendToast(player: Player, message: string, color: Color3?): ()
 end
 
 local function _initPlayer(player: Player): ()
-	inventories[player] = table.clone(STARTER_ITEMS)
-	_syncInventory(player)
+	local profile = DataService.WaitForProfile(player)
+	if not player:IsDescendantOf(Players) then
+		return
+	end
+
+	if profile then
+		inventories[player] = table.clone(profile.inventory)
+	else
+		inventories[player] = table.clone(STARTER_ITEMS)
+	end
+
+	_syncInventory(player, false)
 end
 
 function InventoryService.GetInventory(player: Player): InventoryMap
@@ -69,7 +90,7 @@ function InventoryService.AddItem(player: Player, itemId: ItemId, amount: number
 	local nextAmount = math.min(def.maxStack, current + amount)
 	local added = nextAmount - current
 	inv[itemId] = nextAmount
-	_syncInventory(player)
+	_syncInventory(player, true)
 	return added
 end
 
@@ -107,7 +128,7 @@ function InventoryService.RemoveItems(player: Player, toRemove: { [ItemId]: numb
 		end
 	end
 
-	_syncInventory(player)
+	_syncInventory(player, true)
 	return true
 end
 
@@ -121,7 +142,9 @@ function InventoryService.Start(): ()
 	local craftRemote = Remotes.GetEvent("CraftRecipe")
 	local useItemRemote = Remotes.GetEvent("UseItem")
 
-	Players.PlayerAdded:Connect(_initPlayer)
+	Players.PlayerAdded:Connect(function(player: Player)
+		task.spawn(_initPlayer, player)
+	end)
 
 	Players.PlayerRemoving:Connect(function(player: Player)
 		inventories[player] = nil
@@ -129,7 +152,7 @@ function InventoryService.Start(): ()
 
 	for _, player in ipairs(Players:GetPlayers()) do
 		if not inventories[player] then
-			_initPlayer(player)
+			task.spawn(_initPlayer, player)
 		end
 	end
 
