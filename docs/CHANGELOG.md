@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **Sprint 3 — Role Voxel Outfits, Equippable Tools & Alpha Guide (`feat/role-equipment`):**
+  - Added `Config/Tools.luau` (`axe`, `pickaxe`, `sword`) with `+35%` specialty bonuses for chopping, mining, and melee combat.
+  - Implemented `EquipmentService` welding Role-colored voxel backpacks, shoulder pauldrons, overhead multiplayer RP nameplates, and visible held voxel tools onto characters (R15 & R6 compatible).
+  - Wired tool bonuses into `WorldService` and `CombatService`, added `[T]` tool cycling + HUD pill in `UIController`, and added `docs/ALPHA_RELEASE_CHECKLIST.md`.
 - **Sprint 3 — Action Combat, Voxel Creatures & Creature Models (`feat/combat-creatures`):**
   - Added creature configs (`Config/Creatures.luau`), monster loot items (`raw_meat`, `wolf_pelt`, `slime_gel`, `roast_meat`), and the Hunter-exclusive `hunter_trail_feast` recipe.
   - Implemented `CreatureService` (patrolling Voxel Forest Slimes and Voxel Timber Wolves with safe-shrine respect, aggro/chase/attack AI, HP billboards, hit flash, knockback, loot drops, and respawning).

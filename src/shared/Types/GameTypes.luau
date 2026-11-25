@@ -123,6 +123,17 @@ export type CreatureConfig = {
 	bonusCount: number?,
 }
 
+export type ToolId = "axe" | "pickaxe" | "sword"
+
+export type ToolDefinition = {
+	id: ToolId,
+	displayName: string,
+	specialty: "chop" | "mine" | "combat",
+	bonusMultiplier: number,
+	description: string,
+	accentColor: Color3,
+}
+
 export type LifecycleModule = {
 	Init: (() -> ())?,
 	Start: (() -> ())?,

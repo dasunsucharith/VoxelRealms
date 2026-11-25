@@ -10,6 +10,7 @@ local Remotes = require(Shared.Network.Remotes)
 
 local Server = ServerScriptService:WaitForChild("Server")
 local CreatureService = require(Server.Services.CreatureService)
+local EquipmentService = require(Server.Services.EquipmentService)
 local RoleService = require(Server.Services.RoleService)
 local SurvivalService = require(Server.Services.SurvivalService)
 
@@ -55,7 +56,9 @@ function CombatService.Start(): ()
 		end
 
 		local role = RoleService.GetPlayerRole(player)
-		local damageMultiplier = if role.id == "hunter" or role.id == "blacksmith" then 1.25 else 1.0
+		local roleMultiplier = if role.id == "hunter" or role.id == "blacksmith" then 1.25 else 1.0
+		local toolMultiplier = EquipmentService.GetToolBonus(player, "combat")
+		local damageMultiplier = roleMultiplier * toolMultiplier
 		local damage = math.round(Constants.MELEE_DAMAGE * damageMultiplier)
 
 		local targets = CreatureService.FindCreaturesInArc(root.Position, forward, Constants.MELEE_REACH_STUDS)

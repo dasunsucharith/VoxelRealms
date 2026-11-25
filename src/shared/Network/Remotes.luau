@@ -20,6 +20,7 @@ export type RemoteName =
 	| "ToastNotification"
 	| "RequestAttack"
 	| "CombatFeedback"
+	| "EquipTool"
 
 local REMOTE_NAMES: { RemoteName } = {
 	"SelectRole",
@@ -36,6 +37,7 @@ local REMOTE_NAMES: { RemoteName } = {
 	"ToastNotification",
 	"RequestAttack",
 	"CombatFeedback",
+	"EquipTool",
 }
 
 local Remotes = {}

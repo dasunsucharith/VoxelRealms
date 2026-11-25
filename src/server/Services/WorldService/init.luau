@@ -12,6 +12,7 @@ local GameTypes = require(Shared.Types.GameTypes)
 
 local Server = ServerScriptService:WaitForChild("Server")
 local AtmosphereService = require(Server.Services.AtmosphereService)
+local EquipmentService = require(Server.Services.EquipmentService)
 local InventoryService = require(Server.Services.InventoryService)
 local RoleService = require(Server.Services.RoleService)
 
@@ -433,10 +434,14 @@ function WorldService.Start(): ()
 		lastGatherByPlayer[player] = now
 
 		local role = RoleService.GetPlayerRole(player)
-		local damage = BASE_GATHER_DAMAGE
+		local multiplier = 1.0
 		if node.config.gatherAction == "mine" then
-			damage = math.round(BASE_GATHER_DAMAGE * role.perks.miningSpeedMultiplier)
+			multiplier *= role.perks.miningSpeedMultiplier
+			multiplier *= EquipmentService.GetToolBonus(player, "mine")
+		elseif node.config.gatherAction == "chop" then
+			multiplier *= EquipmentService.GetToolBonus(player, "chop")
 		end
+		local damage = math.round(BASE_GATHER_DAMAGE * multiplier)
 
 		node.health = math.max(0, node.health - damage)
 		_syncNodeAttributes(node)

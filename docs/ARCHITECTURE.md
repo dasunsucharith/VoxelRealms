@@ -61,6 +61,7 @@ Each developer or AI agent can own a specific domain folder with minimal overlap
 | **Day/Night & Campfires** | `src/server/Services/AtmosphereService` | `src/client/Controllers/UIController` | `Config/Constants`, `Workspace` attributes |
 | **Creatures & AI** | `src/server/Services/CreatureService` | — (replicated models & HP bars) | `Config/Creatures`, `Config/Items` |
 | **Action Combat** | `src/server/Services/CombatService` | `src/client/Controllers/CombatController` | `Config/Constants`, `Network/Remotes` |
+| **Role Gear & Tools** | `src/server/Services/EquipmentService` | `src/client/Controllers/UIController` | `Config/Tools`, `Config/Roles`, `Network/Remotes` |
 
 ---
 
@@ -83,6 +84,7 @@ All Client ↔ Server communication goes through `ReplicatedStorage.Remotes` man
 | `ToastNotification` | Server → Client | Display feedback toast message in the client HUD |
 | `RequestAttack` | Client → Server | Request stamina-checked melee strike along aim vector |
 | `CombatFeedback` | Server → Client | Replicate hit position & damage amount for floating damage numbers |
+| `EquipTool` | Client → Server | Equip a voxel tool (`axe`, `pickaxe`, `sword`) onto the character's right hand |
 
 *(Add every new remote here as it is implemented.)*
 

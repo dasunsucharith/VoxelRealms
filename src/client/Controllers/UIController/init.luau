@@ -11,6 +11,7 @@ local Constants = require(Shared.Config.Constants)
 local Items = require(Shared.Config.Items)
 local Recipes = require(Shared.Config.Recipes)
 local Roles = require(Shared.Config.Roles)
+local Tools = require(Shared.Config.Tools)
 local Remotes = require(Shared.Network.Remotes)
 local GameTypes = require(Shared.Types.GameTypes)
 
@@ -20,8 +21,11 @@ type InventoryMap = GameTypes.InventoryMap
 type RoleId = GameTypes.RoleId
 type RoleDefinition = GameTypes.RoleDefinition
 type SurvivalState = GameTypes.SurvivalState
+type ToolId = GameTypes.ToolId
+type ToolDefinition = GameTypes.ToolDefinition
 
 local ROLE_ORDER: { RoleId } = { "architect", "blacksmith", "hunter", "alchemist" }
+local TOOL_ORDER: { ToolId } = { "axe", "pickaxe", "sword" }
 local ITEM_DISPLAY_ORDER: { ItemId } = {
 	"wood",
 	"stone",
@@ -49,6 +53,7 @@ local hungerFill: Frame
 local roleBadgeLabel: TextLabel
 local roleAccentStrip: Frame
 local clockLabel: TextLabel
+local toolBadgeLabel: TextLabel
 local buildModeLabel: TextLabel
 local roleModal: Frame
 local inventoryModal: Frame
@@ -483,6 +488,42 @@ local function _buildHud(): ()
 	clockLabel.TextXAlignment = Enum.TextXAlignment.Left
 	clockLabel.Parent = clockFrame
 
+	-- Top-Left: Active Voxel Tool cycler button
+	local toolBtn = Instance.new("TextButton")
+	toolBtn.Name = "ToolButton"
+	toolBtn.Size = UDim2.new(0, 230, 0, 30)
+	toolBtn.Position = UDim2.new(0, 16, 0, 132)
+	toolBtn.BackgroundColor3 = Color3.fromRGB(24, 28, 38)
+	toolBtn.BackgroundTransparency = 0.16
+	toolBtn.Text = ""
+	toolBtn.AutoButtonColor = true
+	toolBtn.Parent = screenGui
+	_addCorner(toolBtn, 7)
+
+	toolBadgeLabel = Instance.new("TextLabel")
+	toolBadgeLabel.Size = UDim2.new(1, -16, 1, 0)
+	toolBadgeLabel.Position = UDim2.new(0, 8, 0, 0)
+	toolBadgeLabel.BackgroundTransparency = 1
+	toolBadgeLabel.Font = Enum.Font.GothamBold
+	toolBadgeLabel.Text = "TOOL: VOXEL WOOD AXE  [T]"
+	toolBadgeLabel.TextColor3 = Color3.fromRGB(235, 224, 185)
+	toolBadgeLabel.TextSize = 11
+	toolBadgeLabel.TextXAlignment = Enum.TextXAlignment.Left
+	toolBadgeLabel.Parent = toolBtn
+
+	toolBtn.MouseButton1Click:Connect(function()
+		local currentAttr = localPlayer:GetAttribute("EquippedToolId")
+		local currentIdx = 1
+		for idx, tid in ipairs(TOOL_ORDER) do
+			if tid == currentAttr then
+				currentIdx = idx
+				break
+			end
+		end
+		local nextTool = TOOL_ORDER[(currentIdx % #TOOL_ORDER) + 1]
+		Remotes.GetEvent("EquipTool"):FireServer(nextTool)
+	end)
+
 	-- Bottom-Left: Survival Bars (HP, Stamina, Hunger)
 	local survivalFrame = Instance.new("Frame")
 	survivalFrame.Name = "SurvivalBars"
@@ -578,7 +619,7 @@ local function _buildHud(): ()
 	-- Top-Right: Compact Controls Guide
 	controlsPanel = Instance.new("Frame")
 	controlsPanel.Name = "ControlsPanel"
-	controlsPanel.Size = UDim2.new(0, 225, 0, 200)
+	controlsPanel.Size = UDim2.new(0, 225, 0, 216)
 	controlsPanel.Position = UDim2.new(1, -241, 0, 16)
 	controlsPanel.BackgroundColor3 = Color3.fromRGB(20, 23, 30)
 	controlsPanel.BackgroundTransparency = 0.22
@@ -597,6 +638,7 @@ local function _buildHud(): ()
 	controlsText.Text = table.concat({
 		"CONTROLS  [H] Hide",
 		"[V] 1st / 3rd Person",
+		"[T] Cycle Voxel Tool",
 		"[F] Melee Attack",
 		"[E] Gather Resources",
 		"[I] Inventory  |  [C] Craft",
@@ -723,6 +765,29 @@ local function _refreshClockDisplay(): ()
 	end
 end
 
+local function _refreshToolDisplay(): ()
+	local attr = localPlayer:GetAttribute("EquippedToolId")
+	local toolId: ToolId = if typeof(attr) == "string" and (Tools :: { [string]: ToolDefinition })[attr]
+		then attr :: ToolId
+		else "axe"
+	local def = Tools[toolId]
+	toolBadgeLabel.Text = string.format("TOOL: %s  [T]", string.upper(def.displayName))
+	toolBadgeLabel.TextColor3 = def.accentColor
+end
+
+local function _cycleTool(): ()
+	local currentAttr = localPlayer:GetAttribute("EquippedToolId")
+	local currentIdx = 1
+	for idx, tid in ipairs(TOOL_ORDER) do
+		if tid == currentAttr then
+			currentIdx = idx
+			break
+		end
+	end
+	local nextTool = TOOL_ORDER[(currentIdx % #TOOL_ORDER) + 1]
+	Remotes.GetEvent("EquipTool"):FireServer(nextTool)
+end
+
 function UIController.Init(): ()
 	_buildHud()
 	_refreshRoleDisplay()
@@ -730,12 +795,14 @@ function UIController.Init(): ()
 	_refreshInventoryModal()
 	_refreshCraftingModal()
 	_refreshClockDisplay()
+	_refreshToolDisplay()
 end
 
 function UIController.Start(): ()
 	localPlayer:GetAttributeChangedSignal("RoleId"):Connect(_refreshRoleDisplay)
 	localPlayer:GetAttributeChangedSignal("ActiveBlockId"):Connect(_refreshHotbarSelection)
 	localPlayer:GetAttributeChangedSignal("BuildModeEnabled"):Connect(_refreshHotbarSelection)
+	localPlayer:GetAttributeChangedSignal("EquippedToolId"):Connect(_refreshToolDisplay)
 	Workspace:GetAttributeChangedSignal("ClockTime"):Connect(_refreshClockDisplay)
 	Workspace:GetAttributeChangedSignal("DayPhase"):Connect(_refreshClockDisplay)
 
@@ -772,6 +839,8 @@ function UIController.Start(): ()
 
 		if input.KeyCode == Enum.KeyCode.R then
 			_toggleModal(roleModal)
+		elseif input.KeyCode == Enum.KeyCode.T then
+			_cycleTool()
 		elseif input.KeyCode == Enum.KeyCode.I then
 			_toggleModal(inventoryModal)
 		elseif input.KeyCode == Enum.KeyCode.C then

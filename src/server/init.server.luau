@@ -13,6 +13,7 @@ local ServicesFolder = script:WaitForChild("Services")
 local SERVICE_ORDER = {
 	"DataService",
 	"RoleService",
+	"EquipmentService",
 	"SurvivalService",
 	"AtmosphereService",
 	"InventoryService",
